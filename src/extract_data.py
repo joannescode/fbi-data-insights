@@ -1,5 +1,5 @@
 import requests
-from json import load, loads
+from json import load
 import pandas as pd
 
 def load_json(json_path):
@@ -59,15 +59,20 @@ def iteration_data_wanted(data, info_data):
 
     Args:
         data (dict): Dados extraídos da resposta em formato de dicionário.
-        info_data (str): Chave específica a ser extraída de cada item nos dados.
+        info_data (list): Lista de chaves específicas a serem extraídas de cada item nos dados.
 
     Returns:
-        list: Lista de valores extraídos da chave especificada em cada item dos dados.
+        list: Lista de dicionários com os valores extraídos das chaves especificadas em cada item dos dados.
     """
     if "items" not in data:
         raise KeyError(f"Chave 'items' não encontrada nos dados. Chaves disponíveis: {list(data.keys())}")
 
-    return [item.get(info_data, None) for item in data["items"]]
+    extracted_data = []
+    for item in data["items"]:
+        extracted_item = {key: item.get(key, None) for key in info_data}
+        extracted_data.append(extracted_item)
+
+    return extracted_data
 
 
 def append_data(data_wanted):
@@ -81,31 +86,30 @@ def append_data(data_wanted):
     """
     data_wanted_list = []
     for data in data_wanted:
-        if data is not None:
+        if data:
             data_wanted_list.append(data)
 
     return data_wanted_list
 
 
-def insert_values_in_csv_file(name_column, values, filename):
+def insert_values_in_csv_file(columns, values, filename):
     """Insere valores em um arquivo CSV.
 
     Args:
-        name_column (str): Nome da coluna.
-        values (list): Valores a serem inseridos na coluna.
+        columns (list): Lista de nomes das colunas.
+        values (list): Lista de dicionários com os valores a serem inseridos.
         filename (str): Nome do arquivo CSV.
 
     Returns:
         None
     """
-    data_dict = {name_column: values}
-    df = pd.DataFrame(data_dict)
+    df = pd.DataFrame(values, columns=columns)
     df.to_csv(filename, index=False)
 
 # Exemplo de uso das funções
 # if __name__ == "__main__":
 #     json_path = "path/to/json_file.json"
-#     info_data = "field_name"  # Substitua pelo campo desejado
+#     info_data = ["field_name1", "field_name2"]  # Substitua pelos campos desejados
 #     csv_filename = "output.csv"
 #
 #     url, headers = load_json(json_path)
