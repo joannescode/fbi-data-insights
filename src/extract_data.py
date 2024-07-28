@@ -33,6 +33,7 @@ def request_wanted_fbi(url, headers):
     session = requests.Session()
     response = session.get(url=url, headers=headers)
     response.raise_for_status()
+    session.close()
 
     return response
 
@@ -73,48 +74,3 @@ def iteration_data_wanted(data, info_data):
         extracted_data.append(extracted_item)
 
     return extracted_data
-
-
-def append_data(data_wanted):
-    """Adiciona dados à lista de dados desejados.
-
-    Args:
-        data_wanted (list): Lista de dados extraídos.
-
-    Returns:
-        list: Lista com os dados adicionados.
-    """
-    data_wanted_list = []
-    for data in data_wanted:
-        if data:
-            data_wanted_list.append(data)
-
-    return data_wanted_list
-
-
-def insert_values_in_csv_file(columns, values, filename):
-    """Insere valores em um arquivo CSV.
-
-    Args:
-        columns (list): Lista de nomes das colunas.
-        values (list): Lista de dicionários com os valores a serem inseridos.
-        filename (str): Nome do arquivo CSV.
-
-    Returns:
-        None
-    """
-    df = pd.DataFrame(values, columns=columns)
-    df.to_csv(filename, index=False)
-
-# Exemplo de uso das funções
-# if __name__ == "__main__":
-#     json_path = "path/to/json_file.json"
-#     info_data = ["field_name1", "field_name2"]  # Substitua pelos campos desejados
-#     csv_filename = "output.csv"
-#
-#     url, headers = load_json(json_path)
-#     response = request_wanted_fbi(url, headers)
-#     data = extract_data_wanted(response)
-#     extracted_data = iteration_data_wanted(data, info_data)
-#     data_to_append = append_data(extracted_data)
-#     insert_values_in_csv_file(info_data, data_to_append, csv_filename)
