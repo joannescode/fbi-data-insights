@@ -1,0 +1,22 @@
+- Mini BI FBI
+
+Links úteis:
+Doc FBI API: https://www.fbi.gov/wanted/api
+JSON FBI: https://api.fbi.gov/wanted/v1/list
+
+Requests Doc: https://requests.readthedocs.io/en/latest/
+CSV Doc: https://docs.python.org/pt-br/3/library/csv.html
+
+----------------------------------------------
+Etapas do Projeto
+
+Lógica Base:
+1 - Extração de dados:
+- Coletar informações base (title, sex, age_max, age_min, age_range)
+- Coletar informações separados por categorias (occupation, location, subjects)
+- Outras informações úteis (details)
+
+2 - Limpeza de dados:
+- Substituição de valores "Null" por np.nan
+- Remoção de strings desnecessárias para details e outros
+- Conversão de tipos de age_max e age_min
