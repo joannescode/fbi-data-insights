@@ -1,3 +1,4 @@
+# extract_data.py
 import requests
 from json import load
 import pandas as pd
@@ -14,10 +15,10 @@ def load_json(json_path):
     with open(json_path, "r") as file:
         request_data_json = load(file)
 
-    fbi_wanted = request_data_json["url"]
+    fbi_wanted_url = request_data_json["url"]
     request_headers = request_data_json["headers"]
 
-    return fbi_wanted, request_headers
+    return fbi_wanted_url, request_headers
 
 
 def request_wanted_fbi(url, headers):
@@ -55,12 +56,11 @@ def extract_data_wanted(response):
     return data
 
 
-def iteration_data_wanted(data, info_data):
+def iteration_data_wanted(data):
     """Itera sobre os dados extraídos e retorna uma lista de informações específicas.
 
     Args:
         data (dict): Dados extraídos da resposta em formato de dicionário.
-        info_data (list): Lista de chaves específicas a serem extraídas de cada item nos dados.
 
     Returns:
         list: Lista de dicionários com os valores extraídos das chaves especificadas em cada item dos dados.
@@ -69,8 +69,24 @@ def iteration_data_wanted(data, info_data):
         raise KeyError(f"Chave 'items' não encontrada nos dados. Chaves disponíveis: {list(data.keys())}")
 
     extracted_data = []
-    for item in data["items"]:
-        extracted_item = {key: item.get(key, None) for key in info_data}
-        extracted_data.append(extracted_item)
+    for item in data.get("items", []):
+        person = {
+            "name": item.get("title"),
+            "age_max": item.get("age_max"),
+            "age_min": item.get("age_min"),
+            "sex": item.get("sex"),
+            "warning_message": item.get("warning_message"),
+            "race": item.get("race_raw"),
+            "place_of_birth": item.get("place_of_birth"),
+            "details": item.get("details"),
+            "occupations": item.get("occupations") or [],
+            "locations": item.get("locations") or [],
+            "subjects": item.get("subjects") or [],
+            "aliases": item.get("aliases") or [],
+            "reward_text": item.get("reward_text"),
+            "scars_and_marks": item.get("scars_and_marks"),
+            "caution": item.get("caution")
+        }
+        extracted_data.append(person)
 
     return extracted_data
