@@ -1,21 +1,23 @@
-from src.extract_data import *
-from src.transform_data import *
+import csv
+from src.extract_data import (load_json, request_wanted_fbi,
+    extract_data_wanted, iteration_data_wanted)
+from src.transform_data import (transform_data_for_columns, columns_with_values,
+    create_dataframe, separete_values,
+    transform_values_for_nan, transform_values_str_with_replace, change_type_values)
 
 # Extract Data
-url, headers = load_json("request_data.json")
-response = request_wanted_fbi(url, headers)
-data = extract_data_wanted(response)
-info_data = ["title", "age_max", "age_min", "age_range", "location", "details", "subjects"]
-extracted_data = iteration_data_wanted(data, info_data)
+url, headers = load_json(json_path="request_data.json")
+response = request_wanted_fbi(url=url, headers=headers)
+data = extract_data_wanted(response=response)
+extract_data = iteration_data_wanted(data=data)
 
 # Transform Data
-columns_name = ["title", "age_max", "age_min", "age_range", "location", "details", "subjects"]
-transformed_data = transform_data_for_columns(extracted_data, columns_name)
-data_dict = columns_with_values(columns_name, transformed_data)
+extract_data = transform_data_for_columns(extracted_data=extract_data)
+data_dict = columns_with_values(extract_data)
 df = create_dataframe(data_dict)
-df = transform_values_for_nan(df, "Null")
-df = transform_values_str_with_replace(df, "details", ["<p>", "</p>"], "")
-df = change_type_values(df, "age_max")
-df = change_type_values(df, "age_min")
+df = separete_values(df)
+df = transform_values_for_nan(df)
+df = transform_values_str_with_replace(df)
+df = change_type_values(df)
 
-print(df.head())
+df.to_csv('fbi_data.csv', index=False, quoting=csv.QUOTE_NONNUMERIC)
