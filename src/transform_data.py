@@ -1,38 +1,44 @@
+# transform_data.py
 import pandas as pd
 import numpy as np
-from pandas.core.interchange.dataframe_protocol import Column
+import re
 
-def transform_data_for_columns(extracted_data, columns_name):
+def transform_data_for_columns(extracted_data):
     """Transforma a lista de dicionários em uma lista de listas para corresponder aos nomes das colunas.
 
     Args:
         extracted_data (list): Lista de dicionários com os dados extraídos.
-        columns_name (list): Lista de nomes das colunas.
 
     Returns:
         list of lists: Lista de listas de dados para cada coluna.
     """
+    columns_name = ["name", "age_max", "age_min", "sex", "warning_message", "race", "place_of_birth",
+        "details", "occupations", "locations", "subjects", "aliases", "reward_text", "scars_and_marks", "caution"]
     column_data = {col: [] for col in columns_name}
     for item in extracted_data:
         for col in columns_name:
             column_data[col].append(item.get(col, None))
+
     return [column_data[col] for col in columns_name]
 
-def columns_with_values(name_columns, extracted_data):
+
+def columns_with_values(extracted_data):
     """
     Cria um dicionário com várias chaves e os dados extraídos correspondentes.
 
     Args:
-        name_columns (list): Uma lista de nomes de colunas.
         extracted_data (list of lists): Uma lista de listas de dados a serem associadas aos nomes das colunas.
 
     Returns:
         dict: Um dicionário com as chaves sendo os nomes das colunas e os valores sendo as listas de dados correspondentes.
     """
-    if len(name_columns) != len(extracted_data):
+    columns_name = ["name", "age_max", "age_min", "sex", "warning_message", "race", "place_of_birth",
+        "details", "occupations", "locations", "subjects", "aliases", "reward_text", "scars_and_marks", "caution"]
+    if len(columns_name) != len(extracted_data):
         raise ValueError("O número de nomes de colunas deve ser igual ao número de listas de dados.")
 
-    return {name_columns[i]: extracted_data[i] for i in range(len(name_columns))}
+    return {columns_name[i]: extracted_data[i] for i in range(len(columns_name))}
+
 
 def create_dataframe(data_dict):
     """
@@ -46,74 +52,66 @@ def create_dataframe(data_dict):
     """
     return pd.DataFrame(data_dict)
 
-def transform_values_for_nan(df, value_for_transform):
+
+def separete_values(df):
+    """
+    Concatena os valores das colunas de listas em uma string separada por vírgulas.
+
+    Args:
+        df (pd.DataFrame): O DataFrame a ser transformado.
+
+    Returns:
+        pd.DataFrame: O DataFrame transformado com as listas concatenadas em strings.
+    """
+    for column in ['details', 'occupations', 'locations', 'subjects', 'aliases']:
+        df[column] = df[column].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
+    return df
+
+
+def transform_values_for_nan(df):
     """
     Substitui valores específicos por NaN em um DataFrame.
 
     Args:
         df (pd.DataFrame): O DataFrame a ser transformado.
-        value_for_transform (object): O valor a ser substituído por NaN.
 
     Returns:
         pd.DataFrame: O DataFrame transformado com os valores especificados substituídos por NaN.
     """
-    return df.replace(value_for_transform, np.nan)
+    return df.replace("Null", np.nan)
 
-def transform_values_str_with_replace(df, column_name, values, value_to_replace):
+
+def transform_values_str_with_replace(df):
     """
-    Substitui uma substring por outra em uma coluna específica de um DataFrame.
+    Substitui substrings específicas na coluna 'details' de um DataFrame.
 
     Args:
         df (pd.DataFrame): O DataFrame a ser transformado.
-        column_name (str): O nome da coluna em que a substituição será feita.
-        value (list): A lista contendo substring a ser substituída.
-        value_to_replace (str): A substring substituta.
 
     Returns:
-        pd.DataFrame: O DataFrame com a coluna transformada.
+        pd.DataFrame: O DataFrame com a coluna 'details' transformada.
     """
-    for value in values:
-        df[column_name] = df[column_name].str.replace(value, value_to_replace)
+    strings_for_replace = ["<p>", "</p>", "<ul>", "</ul>", "\r", "\n", "<li>", "</li>", "<a>", "</a>"]
+
+    for string in strings_for_replace:
+        df["details"] = df["details"].str.replace(re.escape(string), "", regex=True)
+        df["reward_text"] = df["reward_text"].str.replace(re.escape(string), "", regex=True)
+        df["caution"] = df["caution"].str.replace(re.escape(string), "", regex=True)
+
     return df
 
-def change_type_values(df, column_name):
+
+def change_type_values(df):
     """
-    Altera o tipo de dados de uma coluna específica em um DataFrame.
+    Altera o tipo de dados das colunas 'age_max' e 'age_min' em um DataFrame.
 
     Args:
         df (pd.DataFrame): O DataFrame a ser transformado.
-        column_name (str): O nome da coluna cujo tipo de dados será alterado.
-        type_data (type): O novo tipo de dados para a coluna.
 
     Returns:
-        pd.DataFrame: O DataFrame com a coluna de tipo de dados alterado.
+        pd.DataFrame: O DataFrame com as colunas 'age_max' e 'age_min' com o tipo de dados alterado.
     """
-    print("Deseja alterar o valor final da coluna para Int64? Digite 1 para sim, do contrário digite 0 para não.")
-    resposta = input()
-
-    try:
-        resposta = int(resposta)
-    except ValueError:
-        print("Entrada inválida. Por favor, digite 1 para sim ou 0 para não.")
-        return df
-
-    if resposta == 0:
-        print("Defina o type data para a coluna selecionada na função.")
-        type_data = input()
-        df[column_name] = pd.to_numeric(df[column_name], errors='coerce').astype(type_data)
-
-    elif resposta == 1:
-        print("Passe o tipo de dado que deseja que seja alterado inicialmente, exemplo: float")
-        type_data = input()
-
-        try:
-            df[column_name] = df[column_name].astype(type_data)
-            df[column_name] = pd.to_numeric(df[column_name], errors='coerce').astype("Int64")
-            print(f"Valor da {column_name} alterado primeiramente para {type_data} e finalizado como Int64.")
-        except ValueError:
-            print(f"Tipo de dado '{type_data}' inválido.")
-            return df
-    else:
-        print("Opção inválida. Por favor, digite 1 para sim ou 0 para não.")
+    for col in ["age_max", "age_min"]:
+        df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
 
     return df
