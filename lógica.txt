@@ -12,9 +12,8 @@ Etapas do Projeto
 
 Lógica Base:
 1 - Extração de dados:
-- Coletar informações base (title, sex, age_max, age_min, age_range)
-- Coletar informações separados por categorias (occupation, location, subjects)
-- Outras informações úteis (details)
+- Coletar informações base (title, sex, age_max, age_min, race)
+- Outras informações úteis (warning_message, place_of_birth, details, occupations, locations, subjects, aliases, reward_text, scars_and_marks, caution)
 
 2 - Limpeza de dados:
 - Substituição de valores "Null" por np.nan

@@ -1,7 +1,13 @@
-# extract_data.py
 import requests
 from json import load
 import pandas as pd
+from time import sleep
+import logging
+from requests.exceptions import HTTPError
+from src.requests_fuctions import create_session
+
+# Configuração básica de logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def load_json(json_path):
     """Carrega um arquivo JSON com os requisitos para uma sessão de requisição.
@@ -20,26 +26,54 @@ def load_json(json_path):
 
     return fbi_wanted_url, request_headers
 
-
-def request_wanted_fbi(url, headers):
+def request_wanted_fbi(url, headers, max_pages, max_pages_per_session, max_attempts):
     """Faz uma requisição GET para a página do FBI Wanted.
 
     Args:
         url (str): URL da página do FBI Wanted.
         headers (dict): Dicionário contendo os headers para a requisição.
+        max_pages (int): Número máximo de páginas a ser requisitado no total.
+        max_pages_per_session (int): Número máximo de páginas por sessão antes de reabrir a sessão.
+        max_attempts (int): Número máximo de tentativas para cada conjunto de requisições.
 
     Returns:
-        requests.models.Response: Resposta da página requisitada.
+        list: Lista de respostas das páginas requisitadas.
     """
-    session = requests.Session()
-    response = session.get(url=url, headers=headers)
-    response.raise_for_status()
-    session.close()
+    informations_response = []
+    page_num = 1
 
-    return response
+    for attempt in range(max_attempts):
+        session = create_session()
+
+        while page_num <= max_pages:
+            try:
+                response = session.get(url=url, params={"page": page_num}, headers=headers)
+                response.raise_for_status()
+                informations_response.append(response)
+
+                if response.status_code == 200:
+                    logging.info(f"Requisição feita com sucesso para a página: {page_num}. Status Code: {response.status_code}")
+
+                page_num += 1
+
+                if (page_num - 1) % max_pages_per_session == 0:
+                    logging.info(f"Reabrindo sessão após {max_pages_per_session} requisições.")
+                    session.close()
+                    break
+
+            except HTTPError as e:
+                logging.error(f"Ocorreu um erro durante a requisição, HTTPError: {e}")
+                session.close()
+                break
+
+        if page_num > max_pages:
+            logging.info("Número máximo de páginas requisitadas.")
+            break
+
+    return informations_response
 
 
-def extract_data_wanted(response):
+def extract_data_wanted(informatios_response):
     """Extrai dados da resposta da requisição.
 
     Args:
@@ -49,7 +83,7 @@ def extract_data_wanted(response):
         dict: Dados extraídos da resposta em formato de dicionário.
     """
     try:
-        data = response.json()
+        data = informatios_response.json()
     except ValueError:
         raise ValueError("Erro ao decodificar a resposta JSON.")
 

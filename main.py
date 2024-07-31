@@ -7,9 +7,9 @@ from src.transform_data import (transform_data_for_columns, columns_with_values,
 
 # Extract Data
 url, headers = load_json(json_path="request_data.json")
-response = request_wanted_fbi(url=url, headers=headers)
-data = extract_data_wanted(response=response)
-extract_data = iteration_data_wanted(data=data)
+response = request_wanted_fbi(url=url, headers=headers, max_pages=50, max_pages_per_session=10, max_attempts=5)
+response_json = extract_data_wanted(informatios_response=response)
+extract_data = iteration_data_wanted(data=response_json)
 
 # Transform Data
 extract_data = transform_data_for_columns(extracted_data=extract_data)
