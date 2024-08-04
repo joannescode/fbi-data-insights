@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import re
 
+
 def transform_data_for_columns(extracted_data):
     """Transforma a lista de dicionários em uma lista de listas para corresponder aos nomes das colunas.
 
@@ -12,8 +13,23 @@ def transform_data_for_columns(extracted_data):
     Returns:
         list of lists: Lista de listas de dados para cada coluna.
     """
-    columns_name = ["name", "age_max", "age_min", "sex", "warning_message", "race", "place_of_birth",
-        "details", "occupations", "locations", "subjects", "aliases", "reward_text", "scars_and_marks", "caution"]
+    columns_name = [
+        "name",
+        "age_max",
+        "age_min",
+        "sex",
+        "warning_message",
+        "race",
+        "place_of_birth",
+        "details",
+        "occupations",
+        "locations",
+        "subjects",
+        "aliases",
+        "reward_text",
+        "scars_and_marks",
+        "caution",
+    ]
     column_data = {col: [] for col in columns_name}
     for item in extracted_data:
         for col in columns_name:
@@ -32,10 +48,27 @@ def columns_with_values(extracted_data):
     Returns:
         dict: Um dicionário com as chaves sendo os nomes das colunas e os valores sendo as listas de dados correspondentes.
     """
-    columns_name = ["name", "age_max", "age_min", "sex", "warning_message", "race", "place_of_birth",
-        "details", "occupations", "locations", "subjects", "aliases", "reward_text", "scars_and_marks", "caution"]
+    columns_name = [
+        "name",
+        "age_max",
+        "age_min",
+        "sex",
+        "warning_message",
+        "race",
+        "place_of_birth",
+        "details",
+        "occupations",
+        "locations",
+        "subjects",
+        "aliases",
+        "reward_text",
+        "scars_and_marks",
+        "caution",
+    ]
     if len(columns_name) != len(extracted_data):
-        raise ValueError("O número de nomes de colunas deve ser igual ao número de listas de dados.")
+        raise ValueError(
+            "O número de nomes de colunas deve ser igual ao número de listas de dados."
+        )
 
     return {columns_name[i]: extracted_data[i] for i in range(len(columns_name))}
 
@@ -63,8 +96,10 @@ def separete_values(df):
     Returns:
         pd.DataFrame: O DataFrame transformado com as listas concatenadas em strings.
     """
-    for column in ['details', 'occupations', 'locations', 'subjects', 'aliases']:
-        df[column] = df[column].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
+    for column in ["details", "occupations", "locations", "subjects", "aliases"]:
+        df[column] = df[column].apply(
+            lambda x: ", ".join(x) if isinstance(x, list) else x
+        )
     return df
 
 
@@ -91,11 +126,24 @@ def transform_values_str_with_replace(df):
     Returns:
         pd.DataFrame: O DataFrame com a coluna 'details' transformada.
     """
-    strings_for_replace = ["<p>", "</p>", "<ul>", "</ul>", "\r", "\n", "<li>", "</li>", "<a>", "</a>"]
+    strings_for_replace = [
+        "<p>",
+        "</p>",
+        "<ul>",
+        "</ul>",
+        "\r",
+        "\n",
+        "<li>",
+        "</li>",
+        "<a>",
+        "</a>",
+    ]
 
     for string in strings_for_replace:
         df["details"] = df["details"].str.replace(re.escape(string), "", regex=True)
-        df["reward_text"] = df["reward_text"].str.replace(re.escape(string), "", regex=True)
+        df["reward_text"] = df["reward_text"].str.replace(
+            re.escape(string), "", regex=True
+        )
         df["caution"] = df["caution"].str.replace(re.escape(string), "", regex=True)
 
     return df
@@ -112,6 +160,6 @@ def change_type_values(df):
         pd.DataFrame: O DataFrame com as colunas 'age_max' e 'age_min' com o tipo de dados alterado.
     """
     for col in ["age_max", "age_min"]:
-        df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
     return df

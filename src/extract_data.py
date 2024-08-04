@@ -3,11 +3,15 @@ from json import load
 import pandas as pd
 from time import sleep
 import logging
+from colorama import Fore, Style
 from requests.exceptions import HTTPError
 from src.requests_fuctions import create_session
 
 # Configuração básica de logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 def load_json(json_path):
     """Carrega um arquivo JSON com os requisitos para uma sessão de requisição.
@@ -25,6 +29,7 @@ def load_json(json_path):
     request_headers = request_data_json["headers"]
 
     return fbi_wanted_url, request_headers
+
 
 def request_wanted_fbi(url, headers, max_pages, max_pages_per_session, max_attempts):
     """Faz uma requisição GET para a página do FBI Wanted.
@@ -47,27 +52,45 @@ def request_wanted_fbi(url, headers, max_pages, max_pages_per_session, max_attem
 
         while page_num <= max_pages:
             try:
-                response = session.get(url=url, params={"page": page_num}, headers=headers)
+                response = session.get(
+                    url=url, params={"page": page_num}, headers=headers
+                )
                 response.raise_for_status()
-                informations_response.append(response)
+                informations_response.append(response.json())
 
                 if response.status_code == 200:
-                    logging.info(f"Requisição feita com sucesso para a página: {page_num}. Status Code: {response.status_code}")
+                    logging.info(
+                        Fore.GREEN
+                        + f"Requisição feita com sucesso para a página: {page_num}. Status Code: {response.status_code}"
+                        + Style.RESET_ALL
+                    )
 
                 page_num += 1
 
                 if (page_num - 1) % max_pages_per_session == 0:
-                    logging.info(f"Reabrindo sessão após {max_pages_per_session} requisições.")
+                    logging.info(
+                        Fore.YELLOW
+                        + f"Reabrindo sessão após {max_pages_per_session} requisições."
+                        + Style.RESET_ALL
+                    )
                     session.close()
                     break
 
             except HTTPError as e:
-                logging.error(f"Ocorreu um erro durante a requisição, HTTPError: {e}")
+                logging.error(
+                    Fore.RED
+                    + f"Ocorreu um erro durante a requisição, HTTPError: {e}"
+                    + Style.RESET_ALL
+                )
                 session.close()
                 break
 
         if page_num > max_pages:
-            logging.info("Número máximo de páginas requisitadas.")
+            logging.info(
+                Fore.GREEN
+                + "Número máximo de páginas requisitadas com sucesso!."
+                + Style.RESET_ALL
+            )
             break
 
     return informations_response
@@ -83,7 +106,7 @@ def extract_data_wanted(informatios_response):
         dict: Dados extraídos da resposta em formato de dicionário.
     """
     try:
-        data = informatios_response.json()
+        data = informatios_response
     except ValueError:
         raise ValueError("Erro ao decodificar a resposta JSON.")
 
@@ -94,33 +117,37 @@ def iteration_data_wanted(data):
     """Itera sobre os dados extraídos e retorna uma lista de informações específicas.
 
     Args:
-        data (dict): Dados extraídos da resposta em formato de dicionário.
+        data (list): Lista de listas de dicionários com os dados extraídos da resposta.
 
     Returns:
         list: Lista de dicionários com os valores extraídos das chaves especificadas em cada item dos dados.
     """
-    if "items" not in data:
-        raise KeyError(f"Chave 'items' não encontrada nos dados. Chaves disponíveis: {list(data.keys())}")
-
     extracted_data = []
-    for item in data.get("items", []):
-        person = {
-            "name": item.get("title"),
-            "age_max": item.get("age_max"),
-            "age_min": item.get("age_min"),
-            "sex": item.get("sex"),
-            "warning_message": item.get("warning_message"),
-            "race": item.get("race_raw"),
-            "place_of_birth": item.get("place_of_birth"),
-            "details": item.get("details"),
-            "occupations": item.get("occupations") or [],
-            "locations": item.get("locations") or [],
-            "subjects": item.get("subjects") or [],
-            "aliases": item.get("aliases") or [],
-            "reward_text": item.get("reward_text"),
-            "scars_and_marks": item.get("scars_and_marks"),
-            "caution": item.get("caution")
-        }
-        extracted_data.append(person)
+
+    for page_data in data:
+        if "items" not in page_data:
+            raise KeyError(
+                f"Chave 'items' não encontrada nos dados da página. Chaves disponíveis: {list(page_data.keys())}"
+            )
+
+        for item in page_data.get("items", []):
+            person = {
+                "name": item.get("title"),
+                "age_max": item.get("age_max"),
+                "age_min": item.get("age_min"),
+                "sex": item.get("sex"),
+                "warning_message": item.get("warning_message"),
+                "race": item.get("race_raw"),
+                "place_of_birth": item.get("place_of_birth"),
+                "details": item.get("details"),
+                "occupations": item.get("occupations") or [],
+                "locations": item.get("locations") or [],
+                "subjects": item.get("subjects") or [],
+                "aliases": item.get("aliases") or [],
+                "reward_text": item.get("reward_text"),
+                "scars_and_marks": item.get("scars_and_marks"),
+                "caution": item.get("caution"),
+            }
+            extracted_data.append(person)
 
     return extracted_data
