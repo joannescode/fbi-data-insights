@@ -14,13 +14,19 @@ from src.transform_fuctions.transform_data import (
     change_type_values,
 )
 from src.load_fuctions.env_functions import user_auth_interaction, create_env_file
-from src.load_fuctions.database import (
+from src.load_fuctions.mysql_database import (
     get_credentials,
+    connect_to_mysql,
     connect_to_database,
-    disconnect_database,
+    disconnect_database
 )
+from src.load_fuctions.query_fuctions import create_database, show_databases
 import logging
 from colorama import Fore, Style
+import os
+
+JSON_PATH = "src/extract_fuctions/request_data.json"
+ENV_PATH = "src/load_fuctions/.env"
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -34,7 +40,7 @@ logging.info(
 )
 
 url, headers = load_json(
-    json_path="/home/joannes/Documents/dev/fbi-data-insights/src/extract_fuctions/request_data.json"
+    json_path=JSON_PATH
 )
 response = request_wanted_fbi(
     url=url, headers=headers, max_pages=50, max_pages_per_session=10, max_attempts=5
@@ -58,20 +64,28 @@ print(df.head())
 
 # Load Data
 try:
-    db_username, db_password, db_host, db_name = user_auth_interaction()
-    create_env_file(
-        db_username=db_username,
-        db_password=db_password,
-        db_host=db_host,
-        db_name=db_name,
-    )
+    if os.path.exists(ENV_PATH):
+        logging.info(Fore.GREEN + "Dot env já criado anteriormente." + Style.RESET_ALL)
+        pass
+    
+    elif not os.path.exists(ENV_PATH):
+        db_username, db_password, db_host, db_name = user_auth_interaction()
+        create_env_file(
+            db_username=db_username,
+            db_password=db_password,
+            db_host=db_host,
+            db_name=db_name,
+        )
     username, password, host, database = get_credentials()
-    connection, cursor = connect_to_database(
-        username=username, password=password, host=host, database=database
+    connection, cursor = connect_to_mysql(
+        username=username, password=password, host=host
     )
-
+    create_database(cursor=cursor, database=database)
+    show_databases(cursor=cursor)
+    connect_to_database(user=username, password=password, host=host, database=database, connection=connection)
+    
     ## TODO:
-    # 1 - Criar database para inserção dos dados;
+    # 1 - Criar database para inserção dos dados; OK
     # 2 - Criar tabela dentro do database;
     # 3 - Especificar o nome das colunas baseando nos nomes presentes no dataframe;
     # 4 - Inserir os dados em suas respectivas colunas.
